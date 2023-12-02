@@ -5,13 +5,13 @@
       <form @submit.prevent="login">
         <div class="form-group">
           <label for="email">Correo electrónico</label>
-          <input type="email" id="email" v-model="email" required>
+          <input type="email" id="email" v-model="email" required />
         </div>
         <div class="form-group">
           <label for="password">Contraseña</label>
-          <input type="password" id="password" v-model="password" required>
+          <input type="password" id="password" v-model="password" required />
         </div>
-        <button type="submit">Iniciar sesión</button>
+        <button @click="login" type="submit">Iniciar sesión</button>
       </form>
       <p>
         ¿No tienes una cuenta?
@@ -19,26 +19,50 @@
       </p>
     </div>
   </div>
- </template>
+</template>
 
- <script>
- export default {
+<script>
+import axios from "axios";
+export default {
+  name: "LoginPage",
   data() {
-     return {
-       email: '',
-       password: ''
-     }
+    return {
+      email: "",
+      password: "",
+    };
   },
   methods: {
-     login() {
-       // Realizar la autenticación y manejar el inicio de sesión aquí
-     }
-  }
- }
- </script>
+    login: function () {
+      // Realizar la autenticación y manejar el inicio de sesión aquí
+      var url = "https://localhost:7237/api/Users/Login";
+      var data = {
+        email: this.email,
+        password: this.password,
+      };
 
- <style scoped>
+      axios
+        .post(url, data)
+        .then((response) => {
+          console.log(response.data);
+          this.$q.notify({
+            color: "positive",
+            message: "Inicio de sesión exitoso",
+          });
+          localStorage.setItem("userData", JSON.stringify(response.data));
+          this.$router.push("/Principal");
+        })
+        .catch((error) => {
+          this.$q.notify({
+            color: "negative",
+            message: "Error en la contraseña o el correo electrónico",
+          });
+        });
+    },
+  },
+};
+</script>
 
+<style scoped>
 .login-background {
   background-color: #ccc; /* Color gris de fondo */
   height: 100vh; /* Toma el 100% de la altura de la ventana */
@@ -47,7 +71,7 @@
   justify-content: center;
 }
 
- .login-container {
+.login-container {
   background-color: #5dd765;
   border: 1px solid #ccc;
   border-radius: 5px;
@@ -109,5 +133,4 @@
 .login-container a {
   color: #007bff;
 }
-
- </style>
+</style>

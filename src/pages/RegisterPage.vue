@@ -5,21 +5,31 @@
       <form @submit.prevent="register">
         <div class="form-group">
           <label for="username">Nombre de usuario</label>
-          <input type="text" id="username" v-model="username" required>
+          <input type="text" id="username" v-model="user.username" required />
         </div>
         <div class="form-group">
           <label for="email">Correo electrónico</label>
-          <input type="email" id="email" v-model="email" required>
+          <input type="email" id="email" v-model="user.email" required />
         </div>
         <div class="form-group">
           <label for="password">Contraseña</label>
-          <input type="password" id="password" v-model="password" required>
+          <input
+            type="password"
+            id="password"
+            v-model="user.password"
+            required
+          />
         </div>
         <div class="form-group">
           <label for="confirmPassword">Confirmar contraseña</label>
-          <input type="password" id="confirmPassword" v-model="confirmPassword" required>
+          <input
+            type="password"
+            id="confirmPassword"
+            v-model="confirmPassword"
+            required
+          />
         </div>
-        <button type="submit">Registrarse</button>
+        <button @click="register" type="submit">Registrarse</button>
       </form>
       <p>
         ¿Ya tienes una cuenta?
@@ -30,21 +40,57 @@
 </template>
 
 <script>
+import axios from "axios";
+
 export default {
+  name: "RegisterPage",
   data() {
     return {
-      username: '',
-      email: '',
-      password: '',
-      confirmPassword: ''
-    }
+      user: {
+        username: "",
+        email: "",
+        password: "",
+        registrationDate: new Date(),
+      },
+    };
   },
   methods: {
     register() {
       // Realizar la lógica de registro aquí
-    }
-  }
-}
+      var url = "https://localhost:7237/api/Users/Register";
+      if (this.user.password !== this.confirmPassword) {
+        this.$q.notify({
+          color: "negative",
+          message: "Las contraseñas no coinciden",
+          position: "top",
+          timeOut: 3000,
+        });
+      } else {
+        axios
+          .post(url, this.user)
+          .then((response) => {
+            this.$q.notify({
+              color: "positive",
+              message: "Registro exitoso",
+              position: "top",
+              timeOut: 3000,
+            });
+            console.log(response.data);
+            this.$router.push("/");
+          })
+          .catch((error) => {
+            this.$q.notify({
+              color: "negative",
+              message: "Error en el registro, correo ya registrado",
+              position: "top",
+              timeOut: 3000,
+            });
+            console.log(error);
+          });
+      }
+    },
+  },
+};
 </script>
 
 <style scoped>

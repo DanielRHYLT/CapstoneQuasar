@@ -2,22 +2,168 @@
   <div class="app">
     <header class="header">
       <h1 class="title">AvocadoHealth</h1>
+      <q-btn color="primary" @click="cerrarSesion">Cerrar Sesión</q-btn>
     </header>
-    <main class="main">
-      <section class="upload-section">
-        <h2 class="section-title">Arrastre archivos o cargue sus propias imágenes</h2>
-        <input type="file" class="file-input" />
-      </section>
-      <section class="image-section">
-        <img src="https://th.bing.com/th/id/R.60766cdf940691c55d7a93c4d9aa4588?rik=vRPOV%2fDES5baQw&riu=http%3a%2f%2f2.bp.blogspot.com%2f-UCMxiue_xRg%2fVUpdbNV6g-I%2fAAAAAAAAEMc%2fwXyo9cdFH5E%2fs1600%2fPalta%5b1%5d.JPG&ehk=6PLG7dZCdxs1kGNtwGBlC5fHPIEKdOVhMBb5wgrmad0%3d&risl=&pid=ImgRaw&r=0" class="image" />
-      </section>
-    </main>
+    <div class="q-pa-md">
+      <div class="q-gutter-md">
+        <q-card class="q-mb-md" style="width: 50%">
+          <q-card-section>
+            <div class="q-responsive-embed">
+              <video
+                ref="video"
+                v-if="captureStream && cameraActive"
+                :srcObject="captureStream"
+                id="video"
+                autoplay
+                playsinline
+                muted
+                @loadedmetadata="videoLoaded"
+                style="max-width: 100%; height: auto"
+              ></video>
+            </div>
+          </q-card-section>
+
+          <q-card-actions align="center">
+            <q-btn
+              color="primary"
+              @click="takePhoto"
+              :disable="!videoIsLoaded || !cameraActive"
+            >
+              Tomar Foto
+            </q-btn>
+            &nbsp;&nbsp;
+            <input
+              type="file"
+              @change="handleFileUpload"
+              style="display: none"
+              ref="fileInput"
+            />
+            <q-btn color="primary" @click="openFileInput">Examinar</q-btn>
+            <q-btn color="primary" @click="toggleCamera">
+              {{ cameraActive ? "Desactivar" : "Activar" }} Cámara
+            </q-btn>
+          </q-card-actions>
+        </q-card>
+
+        <q-card class="q-mb-md" style="width: 50%">
+          <q-card-section>
+            <q-img v-if="photo" :src="photo" basic />
+          </q-card-section>
+          <q-card-actions align="center">
+            <q-btn color="positive" @click="sendPhoto" :disable="!photo">
+              Enviar Foto
+            </q-btn>
+          </q-card-actions>
+        </q-card>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 export default {
-  name: "App",
+  name: "PrincipalServicio",
+  data() {
+    return {
+      captureStream: undefined,
+      photo: null,
+      videoIsLoaded: false,
+      cameraActive: true,
+    };
+  },
+  mounted() {
+    /* global MediaStreamConstraints */
+    const constraints = {
+      audio: true,
+      video: true,
+    };
+
+    const gotStream = (stream) => {
+      this.captureStream = stream;
+    };
+
+    const handleError = (error) => {
+      console.error(error.name, error.message);
+    };
+
+    if (this.cameraActive) {
+      navigator.mediaDevices
+        .getUserMedia(constraints)
+        .then(gotStream)
+        .catch(handleError);
+    }
+  },
+  methods: {
+    videoLoaded() {
+      this.videoIsLoaded = true;
+    },
+    takePhoto() {
+      if (this.videoIsLoaded && this.cameraActive) {
+        const canvas = document.createElement("canvas");
+        const video = this.$refs.video;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas
+          .getContext("2d")
+          .drawImage(video, 0, 0, canvas.width, canvas.height);
+        this.photo = canvas.toDataURL("image/jpeg");
+      }
+    },
+    sendPhoto() {
+      if (this.photo) {
+        // Agrega aquí la lógica para enviar la foto al backend
+        // axios.post("/url_del_backend", { photo: this.photo })
+        //   .then((response) => {
+        //     // Manejar la respuesta del servidor si es necesario
+        //   })
+        //   .catch((error) => {
+        //     console.error("Error al enviar la foto al backend", error);
+        //   });
+        this.$q.notify({
+          color: "positive",
+          message: "Foto enviada",
+        });
+      }
+    },
+    openFileInput() {
+      this.$refs.fileInput.click();
+    },
+    handleFileUpload(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.photo = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    },
+    toggleCamera() {
+      this.cameraActive = !this.cameraActive;
+      if (this.cameraActive) {
+        navigator.mediaDevices
+          .getUserMedia({ audio: true, video: true })
+          .then((stream) => {
+            this.captureStream = stream;
+          })
+          .catch((error) => {
+            console.error("Error al activar la cámara", error);
+          });
+      } else {
+        const tracks = this.captureStream?.getTracks();
+        tracks.forEach((track) => track.stop());
+        this.captureStream = undefined;
+      }
+    },
+    cerrarSesion() {
+      // Agrega aquí la lógica para cerrar sesión
+      // Por ejemplo, redirigir al usuario a la página de inicio de sesión
+      // o realizar cualquier otra acción necesaria.
+      this.$router.push("/");
+      this.$q.notify({
+        color: "positive",
+        message: "Sesión cerrada",
+      });
+    },
+  },
 };
 </script>
 
@@ -25,8 +171,9 @@ export default {
 html,
 body {
   height: 100%;
-  margin: 0; /* Eliminar el margen predeterminado */
+  margin: 0;
 }
+
 .app {
   display: flex;
   flex-direction: column;
@@ -36,32 +183,18 @@ body {
 }
 
 .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   background-color: rgb(10, 112, 41);
   color: #ffffff;
-  padding: 20px; /* Reducir el padding para hacer el encabezado menos grueso */
- /* Centrar el texto en el encabezado */
+  padding: 20px;
 }
 
 .title {
   font-size: 30px;
   font-weight: bold;
-  margin: 0; /* Eliminar el margen predeterminado */
-}
-
-.main {
-  width: 100%;
-  max-width: 800px; /* Limitar el ancho máximo del contenido principal */
-  height: 100%;
-  max-height: 500px; /* Limitar la altura máxima del contenido principal */
-  margin: 30px auto 30px auto; /* Margen superior e inferior ajustados */
-  padding: 20px;
-  box-sizing: border-box; /* Incluir el padding en el ancho total */
-  border: 1px solid #000000; /* Añadir un borde de 1px de ancho y color negro */
-  overflow: hidden;
-}
-
-.upload-section {
-  margin-top: 20px;
+  margin: 0;
 }
 
 .section-title {
@@ -69,19 +202,9 @@ body {
   font-weight: bold;
 }
 
-.file-input {
-  width: 100%;
-}
-
-.image-section {
-  margin-top: 20px;
-  overflow: hidden;
-}
-
-.image {
-  width: 100%;
-  max-width: 100%;
-  max-height: 100%;
-  height: 100%;
+.q-gutter-md {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>
